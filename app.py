@@ -1,112 +1,114 @@
 import streamlit as st
 import requests
-import base64
 
-# 🌍 پشتیبانی دو زبانه
-LANG = {
-    "en": {
-        "title": "OmanVista — AI Tourism Explorer 🌍",
-        "subtitle": "Discover Oman's hidden gems — map, photos and community buzz.",
-        "sidebar_title": "OmanVista — AI Tourism Explorer 🌍",
-        "sidebar_desc": "Discover Oman’s hidden gems — map, photos and community buzz.",
-        "select_place": "Select place or type custom:",
-        "type_place": "Type a place name...",
-        "num_images": "Number of images",
-        "map": "Map",
-        "photos": "Photos",
-        "buzz": "Community Buzz",
-        "backend_error": "⚠️ Could not fetch data from backend.",
-        "no_data": "No data available."
-    },
-    "ar": {
-        "title": "OmanVista — مستكشف السياحة بالذكاء الاصطناعي 🌍",
-        "subtitle": "اكتشف جواهر عُمان الخفية — خريطة، صور ومجتمع.",
-        "sidebar_title": "OmanVista — مستكشف السياحة 🌍",
-        "sidebar_desc": "اكتشف جواهر عُمان الخفية — خريطة، صور ومجتمع.",
-        "select_place": "اختر مكانًا أو اكتب:",
-        "type_place": "اكتب اسم المكان...",
-        "num_images": "عدد الصور",
-        "map": "الخريطة",
-        "photos": "الصور",
-        "buzz": "آراء المجتمع",
-        "backend_error": "⚠️ لم نتمكن من جلب البيانات من الخادم.",
-        "no_data": "لا توجد بيانات متاحة."
-    }
-}
+# ---------- تنظیمات صفحه ----------
+st.set_page_config(
+    page_title="OmanVista – AI Tourism Explorer",
+    layout="wide"
+)
 
-# 🎨 CSS برای پس‌زمینه
-def set_bg(image_file):
-    with open(image_file, "rb") as f:
-        encoded = base64.b64encode(f.read()).decode()
+# ---------- CSS بک‌گراند ----------
+def set_bg_url(url):
     st.markdown(
         f"""
         <style>
         .stApp {{
-            background: url(data:image/{"png"};base64,{encoded});
+            background: url("{url}");
             background-size: cover;
             background-position: center;
+        }}
+        .block-container {{
+            background: rgba(255, 255, 255, 0.85);
+            padding: 2rem;
+            border-radius: 12px;
         }}
         </style>
         """,
         unsafe_allow_html=True
     )
 
-# 📌 بک‌گراند (یک عکس sunset در پوشه پروژه بگذار)
-set_bg("sunset.jpg")
+# بک‌گراند اینترنتی (unsplash)
+set_bg_url("https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1600&q=80")
 
-# 🌐 انتخاب زبان
-lang_choice = st.sidebar.radio("Language / اللغة", ["en", "ar"])
-lang_text = LANG[lang_choice]
+# ---------- زبان ----------
+lang = st.sidebar.radio("Language / اللغة", ["en", "ar"])
 
-# 📝 Sidebar
-st.sidebar.title(lang_text["sidebar_title"])
-st.sidebar.info(lang_text["sidebar_desc"])
+texts = {
+    "en": {
+        "title": "OmanVista — AI Tourism Explorer 🌍",
+        "desc": "Discover Oman’s hidden gems — map, photos and community buzz.",
+        "select": "Select place or type custom:",
+        "input": "Type a place name...",
+        "images": "Number of images"
+    },
+    "ar": {
+        "title": "عُمان ڤيستا — مستكشف السياحة بالذكاء الاصطناعي 🌍",
+        "desc": "اكتشف جواهر عُمان المخفية — خرائط، صور، ومجتمع.",
+        "select": "اختر مكانًا أو اكتب:",
+        "input": "أدخل اسم المكان...",
+        "images": "عدد الصور"
+    }
+}
 
-places = ["Muscat", "Nizwa", "Salalah", "Sur", "Muttrah Souq", "Jebel Akhdar"]
+t = texts[lang]
 
-selected_place = st.sidebar.selectbox(lang_text["select_place"], ["-- choose --"] + places)
-custom_place = st.sidebar.text_input(lang_text["type_place"])
-num_images = st.sidebar.slider(lang_text["num_images"], 1, 10, 5)
+# ---------- نوار کناری ----------
+st.sidebar.title(t["title"])
+st.sidebar.write(t["desc"])
 
-# 🏷️ Title
-st.title(lang_text["title"])
-st.write(lang_text["subtitle"])
+places = ["Sultan Qaboos Grand Mosque", "Muttrah Corniche", "Jebel Shams", "Wadi Shab", "Nizwa Fort"]
 
-# 📡 Backend URL
-BACKEND_URL = "https://fortunate-rebirth-production-93ce.up.railway.app"
+place = st.sidebar.selectbox(t["select"], ["-- choose --"] + places)
+custom_place = st.sidebar.text_input(t["input"])
+num_images = st.sidebar.slider(t["images"], 3, 10, 5)
 
-# ✅ اگر مکانی انتخاب شده
-place = custom_place if custom_place else (selected_place if selected_place != "-- choose --" else None)
+# ---------- بخش اصلی ----------
+st.title(t["title"])
+st.write(t["desc"])
 
-if place:
+# اتصال به backend
+backend_url = "https://fortunate-rebirth-production-93ce.up.railway.app"
+
+try:
+    health = requests.get(f"{backend_url}/").json()
+    st.success("✅ Backend is connected!")
+except Exception:
+    st.error("❌ Backend is not reachable.")
+
+# اگر مکانی انتخاب یا وارد شد
+query = custom_place if custom_place else (place if place != "-- choose --" else None)
+
+if query:
+    st.header(f"📍 {query}")
+
+    # 🗺 نقشه
     try:
-        response = requests.get(f"{BACKEND_URL}/explore", params={"place": place, "num_images": num_images})
-        if response.status_code == 200:
-            data = response.json()
-
-            # 🗺️ نقشه
-            st.subheader("🗺️ " + lang_text["map"])
-            st.components.v1.html(data.get("map", ""), height=500)
-
-            # 📸 تصاویر
-            st.subheader("📸 " + lang_text["photos"])
-            images = data.get("images", [])
-            if images:
-                for img in images:
-                    st.image(img["url"], caption=img["photographer"])
-            else:
-                st.info(lang_text["no_data"])
-
-            # 💬 Buzz
-            st.subheader("💬 " + lang_text["buzz"])
-            buzz_posts = data.get("buzz", [])
-            if buzz_posts:
-                for post in buzz_posts:
-                    st.write(f"**{post.get('title','')}** — {post.get('source','')}")
-            else:
-                st.info(lang_text["no_data"])
-
-        else:
-            st.error(lang_text["backend_error"])
+        map_data = requests.get(f"{backend_url}/map?query={query}").json()
+        if "lat" in map_data and "lon" in map_data:
+            st.map([{"lat": map_data["lat"], "lon": map_data["lon"]}])
     except Exception as e:
-        st.error(f"{lang_text['backend_error']} ({str(e)})")
+        st.warning("Map service failed.")
+
+    # 🖼 گالری تصاویر
+    st.subheader("📸 Photo Gallery")
+    try:
+        images = requests.get(f"{backend_url}/images?query={query}&per_page={num_images}").json()
+        if "results" in images:
+            cols = st.columns(3)
+            for idx, photo in enumerate(images["results"]):
+                with cols[idx % 3]:
+                    st.image(photo["url"], caption=photo.get("photographer", ""))
+    except Exception as e:
+        st.warning("Image service failed.")
+
+    # 📰 Reddit (Community Buzz)
+    st.subheader("📰 Community Buzz (Reddit)")
+    try:
+        reddit = requests.get(f"{backend_url}/reddit?query={query}").json()
+        if "posts" in reddit:
+            for post in reddit["posts"]:
+                st.markdown(f"🔗 [{post['title']}]({post['url']})")
+        else:
+            st.info("No Reddit posts found.")
+    except Exception:
+        st.warning("Reddit service failed.")
