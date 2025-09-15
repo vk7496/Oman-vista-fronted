@@ -29,7 +29,7 @@ def set_bg_url(url):
         unsafe_allow_html=True
     )
 
-# ثابت Unsplash (بک‌گراند ثابت)
+# ثابت Unsplash
 set_bg_url("https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1600&q=80")
 
 # ---------- Multi-language ----------
@@ -96,17 +96,18 @@ if query:
     # ----- Map -----
     st.subheader(t["map"])
     try:
-        # داده‌های نمونه برای تست نقشه
+        # داده‌های نمونه برای نقشه
         locations = {
-            "Sultan Qaboos Grand Mosque": [23.5859, 58.4078],
-            "Muttrah Corniche": [23.6155, 58.5638],
-            "Nizwa Fort": [22.9333, 57.5333],
-            "Jebel Shams": [23.2386, 57.2742],
-            "Wadi Shab": [22.8370, 59.2361],
+            "sultan qaboos grand mosque": [23.5859, 58.4078],
+            "muttrah corniche": [23.6155, 58.5638],
+            "nizwa fort": [22.9333, 57.5333],
+            "jebel shams": [23.2386, 57.2742],
+            "wadi shab": [22.8370, 59.2361],
         }
 
-        if query in locations:
-            lat, lon = locations[query]
+        q = query.strip().lower()
+        if q in locations:
+            lat, lon = locations[q]
             fmap = folium.Map(location=[lat, lon], zoom_start=10)
             folium.Marker([lat, lon], popup=query, tooltip=query).add_to(fmap)
             st_folium(fmap, width=800, height=500)
